@@ -160,21 +160,36 @@ class GameWindow(QWidget):
         self.bullet_position = random.randint(1, 6)
         self.current_position = 1
 
+        self.start_game()  # Запускаем таймер сразу при запуске окна
+
     def start_game(self):
-        self.timer.start(1000)
+        self.timer.start(1000)  # Запускаем таймер с интервалом 1 секунда
         self.timer_count = 0
+        self.turn_number = 0
+        self.turn_label.setText(f"Ход: {self.turn_number}")  # Сбрасываем счетчик ходов
+        self.result_label.setText('')  # Сбрасываем сообщение о результатах
+        self.shoot_button.setEnabled(True)  # Включаем кнопку выстрела
+        self.bullet_position = random.randint(1, 6)
+        self.current_position = 1
 
     def spin_barrel(self):
         self.bullet_position = random.randint(1, 6)
-        print(f"Позиция пули в барабане: {self.bullet_position}")
+        self.result_label.setText(f"Барабан прокручен.")
 
     def shoot(self):
         self.turn_number += 1  # Увеличиваем счетчик ходов на 1
-
         self.turn_label.setText(f"Ход: {self.turn_number}")  # Обновляем текст только один раз
 
         if self.current_position == self.bullet_position:
             self.result_label.setText('Пуля в барабане! Game over!')
+            self.timer.stop()  # Останавливаем таймер при проигрыше
+            self.shoot_button.setEnabled(False)  # Отключаем кнопку выстрела
+
+            # Создаем новое окно GameOverWindow
+            self.game_over_window = GameOverWindow()
+            self.game_over_window.show()
+
+            self.close()  # Закрываем текущее окно игры
         else:
             self.result_label.setText('Пустой барабан. Ничего не произошло.')
 
@@ -183,12 +198,45 @@ class GameWindow(QWidget):
             self.current_position = 1
 
     def update_timer(self):
-        # self.timer_count += 1
-        # self.turn_label.setText(f"Ход: {self.timer_count}")  # Обновляем счетчик ходов
+        self.timer_count += 1
         self.timer_label.setText(str(self.timer_count))  # Обновляем таймер
 
-    def update_timer_label(self, time):
-        self.timer_label.setText(str(time))
+class GameOverWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Игра окончена")
+        self.setGeometry(300, 200, 300, 150)
+        self.setStyleSheet("background-color: #222;")
+
+        layout = QVBoxLayout()
+
+        # Сообщение о проигрыше
+        game_over_label = QLabel("Вы проиграли!")
+        game_over_label.setFont(QFont('Arial', 16))
+        game_over_label.setStyleSheet("color: #fff;")
+        game_over_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(game_over_label)
+
+        # Кнопка "Начать заново"
+        restart_button = QPushButton('Начать заново')
+        restart_button.setFont(QFont('Arial', 14))
+        restart_button.setStyleSheet("background-color: #4CAF50; color: #fff; padding: 10px 20px; border: none;")
+        restart_button.clicked.connect(self.restart_game)
+        layout.addWidget(restart_button)
+
+        # Кнопка "Выход"
+        exit_button = QPushButton('Выход')
+        exit_button.setFont(QFont('Arial', 14))
+        exit_button.setStyleSheet("background-color: #f44336; color: #fff; padding: 10px 20px; border: none;")
+        exit_button.clicked.connect(self.close)
+        layout.addWidget(exit_button)
+
+        self.setLayout(layout)
+
+    def restart_game(self):
+        self.close()  # Закрываем окно "Game Over"
+        menu = RussianRouletteMenu()  # Создаем новое окно меню
+        menu.show()  # Открываем новое окно меню
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
