@@ -15,7 +15,6 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import QTimer, Qt
 from PyQt6.QtGui import QIcon, QPixmap, QFont
 
-
 class RussianRouletteMenu(QWidget):
     def __init__(self):
         super().__init__()
@@ -84,6 +83,7 @@ class GameWindow(QWidget):
         self.setWindowTitle('Русская рулетка')
         self.setGeometry(100, 100, 600, 400)  # Увеличили размер окна
         self.setStyleSheet("background-color: #222;")  # Задний фон игры
+        self.first_shot = True  # Отслеживаем, был ли уже первый выстрел
 
         layout = QVBoxLayout()
 
@@ -147,7 +147,7 @@ class GameWindow(QWidget):
         self.timer.timeout.connect(self.update_timer)
         self.timer_count = 0
         self.player_count = 1
-        self.turn_number = 1
+        self.turn_number = 0
 
         # Игровое поле
         self.barrel_spin_button = QPushButton('Прокрутить барабан', self)
@@ -169,7 +169,8 @@ class GameWindow(QWidget):
         print(f"Позиция пули в барабане: {self.bullet_position}")
 
     def shoot(self):
-        self.turn_number += 1  # Увеличиваем счетчик ходов после выстрела
+        self.turn_number += 1  # Увеличиваем счетчик ходов на 1
+
         self.turn_label.setText(f"Ход: {self.turn_number}")  # Обновляем текст только один раз
 
         if self.current_position == self.bullet_position:
