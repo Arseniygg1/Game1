@@ -23,7 +23,7 @@ class RussianRouletteMenu(QWidget):
     def init_ui(self):
         self.setWindowTitle('Русская рулетка')
         self.setWindowIcon(QIcon('path/to/your/icon.ico'))  # Замените "path/to/your/icon.ico" на путь к иконке
-        self.setGeometry(300, 200, 400, 200)
+        self.setGeometry(300, 200, 600, 400)  # Устанавливаем размер для меню
         self.setStyleSheet("background-color: #222;")  # Задний фон игры
 
         layout = QVBoxLayout()
@@ -63,9 +63,9 @@ class RussianRouletteMenu(QWidget):
         self.setLayout(layout)
 
     def start_game(self):
-        self.game_window = GameWindow()
+        self.game_window = GameWindow(self)  # Передаем ссылку на меню
         self.game_window.show()
-        self.close()  # Закрыть меню
+        self.close()  # Закрываем меню
 
     def show_rules(self):
         rules = 'Правила игры:\n\n'
@@ -78,10 +78,11 @@ class RussianRouletteMenu(QWidget):
 
 
 class GameWindow(QWidget):
-    def __init__(self):
+    def __init__(self, menu):
         super().__init__()
+        self.menu = menu  # Сохраняем ссылку на меню
         self.setWindowTitle('Русская рулетка')
-        self.setGeometry(100, 100, 600, 400)  # Увеличили размер окна
+        self.setGeometry(100, 100, 600, 400)  # Устанавливаем размер для игры
         self.setStyleSheet("background-color: #222;")  # Задний фон игры
         self.first_shot = True  # Отслеживаем, был ли уже первый выстрел
 
@@ -172,6 +173,17 @@ class GameWindow(QWidget):
         self.bullet_position = random.randint(1, 6)
         self.current_position = 1
 
+        # Удаляем элементы меню проигрыша
+        if self.game_field_layout.count() > 2:  # Проверяем, есть ли элементы меню проигрыша
+            for i in range(self.game_field_layout.count() - 2, -1, -1):
+                item = self.game_field_layout.itemAt(i).widget()
+                self.game_field_layout.removeWidget(item)
+                item.deleteLater()
+
+        # Добавляем элементы игрового поля обратно
+        self.game_field_layout.addWidget(self.barrel_spin_button)
+        self.game_field_layout.addWidget(self.result_label)
+
     def spin_barrel(self):
         self.bullet_position = random.randint(1, 6)
         self.result_label.setText(f"Барабан прокручен.")
@@ -185,11 +197,31 @@ class GameWindow(QWidget):
             self.timer.stop()  # Останавливаем таймер при проигрыше
             self.shoot_button.setEnabled(False)  # Отключаем кнопку выстрела
 
-            # Создаем новое окно GameOverWindow
-            self.game_over_window = GameOverWindow()
-            self.game_over_window.show()
+            # Удаляем игровое поле
+            self.game_field_layout.removeWidget(self.barrel_spin_button)
+            self.game_field_layout.removeWidget(self.result_label)
+            self.barrel_spin_button.deleteLater()
+            self.result_label.deleteLater()
 
-            self.close()  # Закрываем текущее окно игры
+            # Создаем элементы меню проигрыша
+            game_over_label = QLabel("Вы проиграли!")
+            game_over_label.setFont(QFont('Arial', 16))
+            game_over_label.setStyleSheet("color: #fff;")
+            game_over_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.game_field_layout.addWidget(game_over_label)
+
+            restart_button = QPushButton('Начать заново')
+            restart_button.setFont(QFont('Arial', 14))
+            restart_button.setStyleSheet("background-color: #4CAF50; color: #fff; padding: 10px 20px; border: none;")
+            restart_button.clicked.connect(self.restart_game)  # Вызываем метод перезапуска
+            self.game_field_layout.addWidget(restart_button)
+
+            exit_button = QPushButton('Выход')
+            exit_button.setFont(QFont('Arial', 14))
+            exit_button.setStyleSheet("background-color: #f44336; color: #fff; padding: 10px 20px; border: none;")
+            exit_button.clicked.connect(self.exit_to_menu)  # Вызываем метод выхода в меню
+            self.game_field_layout.addWidget(exit_button)
+
         else:
             self.result_label.setText('Пустой барабан. Ничего не произошло.')
 
@@ -201,42 +233,14 @@ class GameWindow(QWidget):
         self.timer_count += 1
         self.timer_label.setText(str(self.timer_count))  # Обновляем таймер
 
-class GameOverWindow(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("Игра окончена")
-        self.setGeometry(300, 200, 300, 150)
-        self.setStyleSheet("background-color: #222;")
-
-        layout = QVBoxLayout()
-
-        # Сообщение о проигрыше
-        game_over_label = QLabel("Вы проиграли!")
-        game_over_label.setFont(QFont('Arial', 16))
-        game_over_label.setStyleSheet("color: #fff;")
-        game_over_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(game_over_label)
-
-        # Кнопка "Начать заново"
-        restart_button = QPushButton('Начать заново')
-        restart_button.setFont(QFont('Arial', 14))
-        restart_button.setStyleSheet("background-color: #4CAF50; color: #fff; padding: 10px 20px; border: none;")
-        restart_button.clicked.connect(self.restart_game)
-        layout.addWidget(restart_button)
-
-        # Кнопка "Выход"
-        exit_button = QPushButton('Выход')
-        exit_button.setFont(QFont('Arial', 14))
-        exit_button.setStyleSheet("background-color: #f44336; color: #fff; padding: 10px 20px; border: none;")
-        exit_button.clicked.connect(self.close)
-        layout.addWidget(exit_button)
-
-        self.setLayout(layout)
-
     def restart_game(self):
-        self.close()  # Закрываем окно "Game Over"
-        menu = RussianRouletteMenu()  # Создаем новое окно меню
-        menu.show()  # Открываем новое окно меню
+        self.close()  # Закрываем текущее окно
+        self.game_window = GameWindow(self.menu)  # Создаем новое окно
+        self.game_window.show()  # Показываем новое окно
+
+    def exit_to_menu(self):
+        self.close()  # Закрываем текущее окно
+        self.menu.show()  # Показываем меню
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
